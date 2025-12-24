@@ -1,38 +1,35 @@
 # Standalone Social Media Analytics - Streamlit Only Version
-# No external services required (no AWS, no PostgreSQL, no Redis)
+# Updated for Python 3.14 compatibility
 
 # Streamlit
-streamlit==1.29.0
+streamlit
 
 # Data Processing
-pandas==2.1.3
-numpy==1.26.2
+pandas
+numpy
 
 # Visualization
-plotly==5.18.0
-matplotlib==3.8.2
-seaborn==0.13.0
+plotly
+matplotlib
+seaborn
 
 # Platform APIs
-tweepy==4.14.0              # Twitter API
-google-api-python-client==2.108.0  # YouTube API
-praw==7.7.1                 # Reddit API
-requests==2.31.0            # For Twitch API
+tweepy              # Twitter API
+google-api-python-client  # YouTube API
+praw                # Reddit API
+requests            # For Twitch API
 
 # Analytics & NLP
-textblob==0.17.1           # Sentiment analysis (lightweight alternative to transformers)
-wordcloud==1.9.3           # Word cloud generation
-
-# Database (in-memory)
-# SQLite is built into Python, no extra package needed
+textblob           # Sentiment analysis (lightweight alternative to transformers)
+wordcloud          # Word cloud generation
 
 # Utilities
-python-dotenv==1.0.0       # Optional: for loading .env in development
-pytz==2023.3               # Timezone handling
+python-dotenv      # Optional: for loading .env in development
+pytz               # Timezone handling
 
 # Export
-openpyxl==3.1.2            # Excel export
-reportlab==4.0.7           # PDF generation
+openpyxl           # Excel export
+reportlab          # PDF generation
 
 # Progress bars for data collection
-tqdm==4.66.1
+tqdm
