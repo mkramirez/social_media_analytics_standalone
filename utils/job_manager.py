@@ -25,6 +25,7 @@ class MonitoringJob:
     is_active: bool = True
     total_runs: int = 0
     last_error: str = None
+    metadata: dict = None  # Platform-specific settings (e.g., chat_enabled, chat_duration)
 
     def __post_init__(self):
         """Set initial next_run time."""
@@ -47,7 +48,8 @@ class JobManager:
         platform: str,
         entity_id: int,
         entity_name: str,
-        interval_minutes: int = 15
+        interval_minutes: int = 15,
+        metadata: dict = None
     ) -> str:
         """
         Add a new monitoring job.
@@ -66,7 +68,8 @@ class JobManager:
             platform=platform,
             entity_id=entity_id,
             entity_name=entity_name,
-            interval_minutes=interval_minutes
+            interval_minutes=interval_minutes,
+            metadata=metadata or {}
         )
 
         jobs[job_id] = job
@@ -119,14 +122,19 @@ class JobManager:
         return [job for job in jobs.values() if job.is_active]
 
     @staticmethod
-    def get_jobs_due_for_run() -> List[MonitoringJob]:
-        """Get all jobs that are due to run."""
+    def get_jobs_due_for_run(platform: str = None) -> List[MonitoringJob]:
+        """Get all jobs that are due to run, optionally filtered by platform."""
         now = datetime.now()
         jobs = JobManager._get_jobs_dict()
-        return [
+        due_jobs = [
             job for job in jobs.values()
             if job.is_active and job.next_run <= now
         ]
+
+        if platform:
+            due_jobs = [job for job in due_jobs if job.platform == platform]
+
+        return due_jobs
 
     @staticmethod
     def mark_job_run(job_id: str, success: bool = True, error: str = None):
@@ -166,6 +174,52 @@ class JobManager:
             'total_runs': sum(j.total_runs for j in jobs),
             'jobs_with_errors': len([j for j in jobs if j.last_error is not None])
         }
+
+    @staticmethod
+    def start_all_jobs(interval_seconds: int):
+        """Activate all jobs with specified interval."""
+        jobs = JobManager._get_jobs_dict()
+        for job in jobs.values():
+            job.is_active = True
+            job.interval_minutes = interval_seconds / 60  # Convert to minutes
+            job.next_run = datetime.now()  # Run immediately
+
+    @staticmethod
+    def stop_all_jobs():
+        """Pause all monitoring jobs."""
+        jobs = JobManager._get_jobs_dict()
+        for job in jobs.values():
+            job.is_active = False
+
+    @staticmethod
+    def update_job_interval(job_id: str, interval_seconds: int):
+        """Update interval for a specific job."""
+        jobs = JobManager._get_jobs_dict()
+        if job_id in jobs:
+            job = jobs[job_id]
+            job.interval_minutes = interval_seconds / 60
+            # Recalculate next run
+            if job.last_run:
+                job.next_run = job.last_run + timedelta(seconds=interval_seconds)
+            else:
+                job.next_run = datetime.now()
+
+    @staticmethod
+    def mark_job_error(job_id: str, error: str):
+        """Mark a job with an error."""
+        jobs = JobManager._get_jobs_dict()
+        if job_id in jobs:
+            job = jobs[job_id]
+            job.last_error = error
+
+    @staticmethod
+    def get_job_for_entity(platform: str, entity_id: int) -> MonitoringJob:
+        """Get job for a specific entity."""
+        jobs = JobManager._get_jobs_dict()
+        for job in jobs.values():
+            if job.platform == platform and job.entity_id == entity_id:
+                return job
+        return None
 
 
 def check_and_run_due_jobs():

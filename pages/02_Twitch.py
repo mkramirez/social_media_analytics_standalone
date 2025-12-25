@@ -18,26 +18,55 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database.session_db import get_session_db
 from utils.credential_manager import CredentialManager
 from utils.job_manager import JobManager
-from src.platforms.twitch_integration import (
+from src.platforms.twitch_integration_enhanced import (
     TwitchDatabase,
     collect_twitch_data
 )
 
 
-st.set_page_config(page_title="Twitch Monitoring", page_icon="🎮", layout="wide")
+st.set_page_config(page_title="Twitch Monitoring", layout="wide")
+
+
+# Auto-execution for monitoring
+if st.session_state.get('monitoring_active', False):
+    db = get_session_db()
+
+    # Execute due jobs for Twitch
+    due_jobs = JobManager.get_jobs_due_for_run(platform='twitch')
+
+    for job in due_jobs:
+        try:
+            # Get chat settings from job metadata
+            collect_chat = job.metadata.get('collect_chat', False) if job.metadata else False
+            chat_duration = job.metadata.get('chat_duration', 60) if job.metadata else 60
+
+            # Execute collection
+            success = collect_twitch_data(
+                job.entity_name,
+                db,
+                collect_chat=collect_chat,
+                chat_duration=chat_duration
+            )
+
+            if success:
+                JobManager.mark_job_run(job.id)
+            else:
+                JobManager.mark_job_error(job.id, "Collection failed")
+        except Exception as e:
+            JobManager.mark_job_error(job.id, str(e))
 
 
 def check_credentials():
     """Check if Twitch credentials are configured."""
     if not CredentialManager.has_twitch_credentials():
-        st.warning("⚠️ Twitch credentials not configured")
+        st.warning("⚠ Twitch credentials not configured")
         st.info("Please go to the **Setup** page to configure your Twitch API credentials")
         st.stop()
 
 
 def show_add_channel():
     """Show form to add a channel."""
-    st.subheader("📝 Add Channel")
+    st.subheader("Add Channel")
 
     with st.form("add_channel_form"):
         channel_name = st.text_input(
@@ -53,6 +82,25 @@ def show_add_channel():
 
         with col2:
             start_monitoring = st.checkbox("Start monitoring job", value=False)
+
+        # Chat collection options
+        st.divider()
+        collect_chat = st.checkbox(
+            "Collect chat messages when stream is live",
+            value=False,
+            help="Collect chat messages via IRC when stream is live (requires additional API calls)"
+        )
+
+        chat_duration = 60  # Default
+        if collect_chat:
+            chat_duration = st.number_input(
+                "Chat collection duration (seconds)",
+                min_value=10,
+                max_value=300,
+                value=60,
+                step=10,
+                help="How long to collect chat messages during each check"
+            )
 
         if start_monitoring:
             interval = st.select_slider(
@@ -92,20 +140,27 @@ def show_add_channel():
                     success = collect_twitch_data(channel_name, db)
 
                     if success:
-                        st.success(f"✅ Successfully added and collected data for **{channel_name}**")
+                        st.success(f"✓ Successfully added and collected data for **{channel_name}**")
                     else:
                         st.error(f"Added channel but failed to collect data. Check your credentials.")
 
             # Start monitoring
             if start_monitoring:
+                # Prepare metadata with chat settings
+                job_metadata = {
+                    'collect_chat': collect_chat,
+                    'chat_duration': chat_duration
+                }
+
                 job_id = JobManager.add_job(
                     platform="twitch",
                     entity_id=channel_id,
                     entity_name=channel_name,
-                    interval_minutes=interval
+                    interval_minutes=interval,
+                    metadata=job_metadata
                 )
                 twitch_db.set_monitoring(channel_id, True)
-                st.success(f"✅ Started monitoring job (every {interval} minutes)")
+                st.success(f"✓ Started monitoring job (every {interval} minutes)")
 
             st.balloons()
             st.rerun()
@@ -113,7 +168,7 @@ def show_add_channel():
 
 def show_channels_list():
     """Show list of all channels."""
-    st.subheader("📋 Monitored Channels")
+    st.subheader("Monitored Channels")
 
     db = get_session_db()
     twitch_db = TwitchDatabase(db)
@@ -130,7 +185,7 @@ def show_channels_list():
         channel_id = channel['id']
         channel_name = channel['channel_name']
 
-        with st.expander(f"🎮 **{channel_name}**", expanded=False):
+        with st.expander(f"**{channel_name}**", expanded=False):
             # Get latest record
             latest = twitch_db.get_latest_record(channel_id)
             stats = twitch_db.get_channel_statistics(channel_id)
@@ -141,14 +196,14 @@ def show_channels_list():
             with col1:
                 if latest:
                     if latest['is_live']:
-                        st.success("🔴 **LIVE**")
+                        st.success("**LIVE**")
                         if latest['title']:
                             st.write(f"**Title:** {latest['title']}")
                         if latest['game_name']:
                             st.write(f"**Game:** {latest['game_name']}")
                         st.metric("Current Viewers", f"{latest['viewer_count']:,}")
                     else:
-                        st.info("⚫ **OFFLINE**")
+                        st.info("**OFFLINE**")
                 else:
                     st.warning("No data collected yet")
 
@@ -167,9 +222,9 @@ def show_channels_list():
                 if channel_jobs:
                     job = channel_jobs[0]
                     if job.is_active:
-                        st.success("✅ Monitoring")
+                        st.success("✓ Monitoring")
                     else:
-                        st.warning("⏸️ Paused")
+                        st.warning("⏸ Paused")
 
             st.divider()
 
@@ -177,7 +232,7 @@ def show_channels_list():
             action_col1, action_col2, action_col3, action_col4 = st.columns(4)
 
             with action_col1:
-                if st.button(f"🔄 Collect Data", key=f"collect_{channel_id}"):
+                if st.button(f"Collect Data", key=f"collect_{channel_id}"):
                     with st.spinner("Collecting..."):
                         success = collect_twitch_data(channel_name, db)
                         if success:
@@ -191,19 +246,19 @@ def show_channels_list():
                 if channel_jobs:
                     job = channel_jobs[0]
                     if job.is_active:
-                        if st.button(f"⏸️ Pause", key=f"pause_{channel_id}"):
+                        if st.button(f"Pause", key=f"pause_{channel_id}"):
                             JobManager.pause_job(job.id)
                             twitch_db.set_monitoring(channel_id, False)
                             st.success("Job paused")
                             st.rerun()
                     else:
-                        if st.button(f"▶️ Resume", key=f"resume_{channel_id}"):
+                        if st.button(f"Resume", key=f"resume_{channel_id}"):
                             JobManager.resume_job(job.id)
                             twitch_db.set_monitoring(channel_id, True)
                             st.success("Job resumed")
                             st.rerun()
                 else:
-                    if st.button(f"▶️ Start Job", key=f"start_{channel_id}"):
+                    if st.button(f"Start Job", key=f"start_{channel_id}"):
                         job_id = JobManager.add_job(
                             platform="twitch",
                             entity_id=channel_id,
@@ -215,12 +270,12 @@ def show_channels_list():
                         st.rerun()
 
             with action_col3:
-                if st.button(f"📊 View Data", key=f"view_{channel_id}"):
+                if st.button(f"View Data", key=f"view_{channel_id}"):
                     st.session_state.selected_channel = channel_id
                     st.rerun()
 
             with action_col4:
-                if st.button(f"🗑️ Delete", key=f"delete_{channel_id}"):
+                if st.button(f"Delete", key=f"delete_{channel_id}"):
                     if st.session_state.get(f"confirm_delete_{channel_id}", False):
                         # Delete job if exists
                         if channel_jobs:
@@ -255,7 +310,7 @@ def show_channel_details(channel_id: int):
     col1, col2 = st.columns([3, 1])
 
     with col1:
-        st.subheader(f"📊 Data for **{channel_name}**")
+        st.subheader(f"Data for **{channel_name}**")
 
     with col2:
         if st.button("← Back to List"):
@@ -299,7 +354,7 @@ def show_channel_details(channel_id: int):
     st.divider()
 
     # Charts
-    tab1, tab2, tab3 = st.tabs(["📈 Viewer Count Over Time", "📊 Live Status", "📋 Raw Data"])
+    tab1, tab2, tab3 = st.tabs(["Viewer Count Over Time", "Live Status", "Raw Data"])
 
     with tab1:
         st.subheader("Viewer Count Over Time")
@@ -351,7 +406,7 @@ def show_channel_details(channel_id: int):
 
         # Show dataframe
         display_df = df[['timestamp', 'is_live', 'title', 'game_name', 'viewer_count']].copy()
-        display_df['is_live'] = display_df['is_live'].map({1: '🔴 Live', 0: '⚫ Offline'})
+        display_df['is_live'] = display_df['is_live'].map({1: 'Live', 0: 'Offline'})
 
         st.dataframe(
             display_df,
@@ -362,7 +417,7 @@ def show_channel_details(channel_id: int):
         # Download button
         csv = df.to_csv(index=False)
         st.download_button(
-            label="📥 Download as CSV",
+            label="Download as CSV",
             data=csv,
             file_name=f"twitch_{channel_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
             mime="text/csv"
@@ -371,7 +426,7 @@ def show_channel_details(channel_id: int):
 
 def main():
     """Main Twitch page."""
-    st.title("🎮 Twitch Monitoring")
+    st.title("Twitch Monitoring")
 
     # Check credentials
     check_credentials()

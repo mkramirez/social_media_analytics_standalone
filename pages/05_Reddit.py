@@ -17,18 +17,37 @@ from utils.job_manager import JobManager
 from src.platforms.reddit_integration import RedditDatabase, collect_reddit_data
 
 
-st.set_page_config(page_title="Reddit Monitoring", page_icon="🔴", layout="wide")
+st.set_page_config(page_title="Reddit Monitoring", page_icon="", layout="wide")
+
+
+# Auto-execution for monitoring
+if st.session_state.get('monitoring_active', False):
+    db = get_session_db()
+
+    # Execute due jobs for Reddit
+    due_jobs = JobManager.get_jobs_due_for_run(platform='reddit')
+
+    for job in due_jobs:
+        try:
+            success = collect_reddit_data(job.entity_name, db, limit=25, sort="hot")
+
+            if success:
+                JobManager.mark_job_run(job.id)
+            else:
+                JobManager.mark_job_error(job.id, "Collection failed")
+        except Exception as e:
+            JobManager.mark_job_error(job.id, str(e))
 
 
 def check_credentials():
     if not CredentialManager.has_reddit_credentials():
-        st.warning("⚠️ Reddit credentials not configured")
+        st.warning("Reddit credentials not configured")
         st.info("Please go to the **Setup** page")
         st.stop()
 
 
 def main():
-    st.title("🔴 Reddit Monitoring")
+    st.title("Reddit Monitoring")
     check_credentials()
 
     db = get_session_db()
@@ -43,7 +62,7 @@ def main():
 
 
 def show_add_subreddit(reddit_db, db):
-    st.subheader("📝 Add Subreddit")
+    st.subheader("Add Subreddit")
 
     with st.form("add_subreddit_form"):
         subreddit_name = st.text_input("Subreddit Name", placeholder="funny, gaming, news (without r/)")
@@ -75,7 +94,7 @@ def show_add_subreddit(reddit_db, db):
                 with st.spinner(f"Collecting posts from r/{subreddit_name}..."):
                     success = collect_reddit_data(subreddit_name, db, limit=25, sort="hot")
                     if success:
-                        st.success(f"✅ Added r/{subreddit_name}")
+                        st.success(f"Added r/{subreddit_name}")
                         if start_monitoring:
                             JobManager.add_job("reddit", subreddit_id, subreddit_name, interval)
                             reddit_db.set_monitoring(subreddit_id, True)
@@ -86,7 +105,7 @@ def show_add_subreddit(reddit_db, db):
 
 
 def show_subreddits_list(reddit_db):
-    st.subheader("📋 Monitored Subreddits")
+    st.subheader("Monitored Subreddits")
 
     subreddits = reddit_db.get_all_subreddits()
 
@@ -95,7 +114,7 @@ def show_subreddits_list(reddit_db):
         return
 
     for subreddit in subreddits:
-        with st.expander(f"🔴 **r/{subreddit['subreddit_name']}**"):
+        with st.expander(f"**r/{subreddit['subreddit_name']}**"):
             stats = reddit_db.get_subreddit_statistics(subreddit['id'])
 
             col1, col2, col3 = st.columns(3)
@@ -106,13 +125,13 @@ def show_subreddits_list(reddit_db):
             with col3:
                 jobs = [j for j in JobManager.get_jobs_by_platform("reddit") if j.entity_id == subreddit['id']]
                 if jobs and jobs[0].is_active:
-                    st.success("✅ Monitoring")
+                    st.success("Monitoring")
 
             st.divider()
 
             c1, c2, c3, c4 = st.columns(4)
             with c1:
-                if st.button("🔄 Collect", key=f"collect_r_{subreddit['id']}"):
+                if st.button("Collect", key=f"collect_r_{subreddit['id']}"):
                     with st.spinner("Collecting..."):
                         collect_reddit_data(subreddit['subreddit_name'], db, limit=25, sort="hot")
                         st.rerun()
@@ -120,23 +139,23 @@ def show_subreddits_list(reddit_db):
                 jobs = [j for j in JobManager.get_jobs_by_platform("reddit") if j.entity_id == subreddit['id']]
                 if jobs:
                     if jobs[0].is_active:
-                        if st.button("⏸️ Pause", key=f"pause_r_{subreddit['id']}"):
+                        if st.button("Pause", key=f"pause_r_{subreddit['id']}"):
                             JobManager.pause_job(jobs[0].id)
                             st.rerun()
                     else:
-                        if st.button("▶️ Resume", key=f"resume_r_{subreddit['id']}"):
+                        if st.button("Resume", key=f"resume_r_{subreddit['id']}"):
                             JobManager.resume_job(jobs[0].id)
                             st.rerun()
                 else:
-                    if st.button("▶️ Start", key=f"start_r_{subreddit['id']}"):
+                    if st.button("Start", key=f"start_r_{subreddit['id']}"):
                         JobManager.add_job("reddit", subreddit['id'], subreddit['subreddit_name'], 30)
                         st.rerun()
             with c3:
-                if st.button("📊 View", key=f"view_r_{subreddit['id']}"):
+                if st.button("View", key=f"view_r_{subreddit['id']}"):
                     st.session_state.selected_subreddit = subreddit['id']
                     st.rerun()
             with c4:
-                if st.button("🗑️ Delete", key=f"del_r_{subreddit['id']}"):
+                if st.button("Delete", key=f"del_r_{subreddit['id']}"):
                     if st.session_state.get(f"confirm_del_r_{subreddit['id']}", False):
                         jobs = [j for j in JobManager.get_jobs_by_platform("reddit") if j.entity_id == subreddit['id']]
                         if jobs:
@@ -158,7 +177,7 @@ def show_subreddit_details(subreddit_id, reddit_db, db):
 
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.subheader(f"📊 r/{subreddit['subreddit_name']}")
+        st.subheader(f"r/{subreddit['subreddit_name']}")
     with col2:
         if st.button("← Back"):
             st.session_state.selected_subreddit = None
@@ -187,7 +206,7 @@ def show_subreddit_details(subreddit_id, reddit_db, db):
 
     st.divider()
 
-    tab1, tab2 = st.tabs(["🏆 Top Posts", "📋 All Posts"])
+    tab1, tab2 = st.tabs(["Top Posts", "All Posts"])
 
     with tab1:
         st.subheader("Top Posts by Score")
@@ -199,13 +218,13 @@ def show_subreddit_details(subreddit_id, reddit_db, db):
                 st.write(f"**{post['title']}**")
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
-                    st.caption(f"⬆️ {post['score']:,} score")
+                    st.caption(f"{post['score']:,} score")
                 with col2:
-                    st.caption(f"💬 {post['num_comments']:,} comments")
+                    st.caption(f"{post['num_comments']:,} comments")
                 with col3:
-                    st.caption(f"📈 {post['upvote_ratio']*100:.0f}% upvoted")
+                    st.caption(f"{post['upvote_ratio']*100:.0f}% upvoted")
                 with col4:
-                    st.caption(f"👤 u/{post['author']}")
+                    st.caption(f"u/{post['author']}")
                 st.divider()
 
     with tab2:
@@ -215,7 +234,7 @@ def show_subreddit_details(subreddit_id, reddit_db, db):
         st.dataframe(display_df, use_container_width=True, hide_index=True)
 
         csv = df.to_csv(index=False)
-        st.download_button("📥 Download CSV", data=csv, file_name=f"reddit_{subreddit['subreddit_name']}_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv")
+        st.download_button("Download CSV", data=csv, file_name=f"reddit_{subreddit['subreddit_name']}_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv")
 
 
 if __name__ == "__main__":

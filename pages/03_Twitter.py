@@ -19,18 +19,37 @@ from utils.job_manager import JobManager
 from src.platforms.twitter_integration import TwitterDatabase, collect_twitter_data
 
 
-st.set_page_config(page_title="Twitter Monitoring", page_icon="🐦", layout="wide")
+st.set_page_config(page_title="Twitter Monitoring", page_icon=":bird:", layout="wide")
+
+
+# Auto-execution for monitoring
+if st.session_state.get('monitoring_active', False):
+    db = get_session_db()
+
+    # Execute due jobs for Twitter
+    due_jobs = JobManager.get_jobs_due_for_run(platform='twitter')
+
+    for job in due_jobs:
+        try:
+            success = collect_twitter_data(job.entity_name, db)
+
+            if success:
+                JobManager.mark_job_run(job.id)
+            else:
+                JobManager.mark_job_error(job.id, "Collection failed")
+        except Exception as e:
+            JobManager.mark_job_error(job.id, str(e))
 
 
 def check_credentials():
     if not CredentialManager.has_twitter_credentials():
-        st.warning("⚠️ Twitter credentials not configured")
+        st.warning("WARNING: Twitter credentials not configured")
         st.info("Please go to the **Setup** page to configure your Twitter API credentials")
         st.stop()
 
 
 def show_add_user():
-    st.subheader("📝 Add Twitter User")
+    st.subheader("Add Twitter User")
 
     with st.form("add_user_form"):
         username = st.text_input(
@@ -75,7 +94,7 @@ def show_add_user():
                 with st.spinner(f"Collecting tweets for **@{username}**..."):
                     success = collect_twitter_data(username, db)
                     if success:
-                        st.success(f"✅ Successfully added and collected data for **@{username}**")
+                        st.success(f"Successfully added and collected data for **@{username}**")
                     else:
                         st.error("Added user but failed to collect data")
 
@@ -87,14 +106,14 @@ def show_add_user():
                     interval_minutes=interval
                 )
                 twitter_db.set_monitoring(user_id, True)
-                st.success(f"✅ Started monitoring job (every {interval} minutes)")
+                st.success(f"Started monitoring job (every {interval} minutes)")
 
             st.balloons()
             st.rerun()
 
 
 def show_users_list():
-    st.subheader("📋 Monitored Users")
+    st.subheader("Monitored Users")
 
     db = get_session_db()
     twitter_db = TwitterDatabase(db)
@@ -111,7 +130,7 @@ def show_users_list():
         user_id = user['id']
         username = user['username']
 
-        with st.expander(f"🐦 **@{username}**", expanded=False):
+        with st.expander(f"**@{username}**", expanded=False):
             stats = twitter_db.get_user_statistics(user_id)
 
             col1, col2, col3 = st.columns(3)
@@ -133,16 +152,16 @@ def show_users_list():
                 user_jobs = [j for j in jobs if j.entity_id == user_id]
 
                 if user_jobs and user_jobs[0].is_active:
-                    st.success("✅ Monitoring")
+                    st.success("MONITORING")
                 elif user_jobs:
-                    st.warning("⏸️ Paused")
+                    st.warning("PAUSED")
 
             st.divider()
 
             action_col1, action_col2, action_col3, action_col4 = st.columns(4)
 
             with action_col1:
-                if st.button(f"🔄 Collect Data", key=f"collect_{user_id}"):
+                if st.button(f"Collect Data", key=f"collect_{user_id}"):
                     with st.spinner("Collecting..."):
                         success = collect_twitter_data(username, db)
                         if success:
@@ -154,28 +173,28 @@ def show_users_list():
                 if user_jobs:
                     job = user_jobs[0]
                     if job.is_active:
-                        if st.button(f"⏸️ Pause", key=f"pause_{user_id}"):
+                        if st.button(f"Pause", key=f"pause_{user_id}"):
                             JobManager.pause_job(job.id)
                             twitter_db.set_monitoring(user_id, False)
                             st.rerun()
                     else:
-                        if st.button(f"▶️ Resume", key=f"resume_{user_id}"):
+                        if st.button(f"Resume", key=f"resume_{user_id}"):
                             JobManager.resume_job(job.id)
                             twitter_db.set_monitoring(user_id, True)
                             st.rerun()
                 else:
-                    if st.button(f"▶️ Start Job", key=f"start_{user_id}"):
+                    if st.button(f"Start Job", key=f"start_{user_id}"):
                         JobManager.add_job("twitter", user_id, username, 60)
                         twitter_db.set_monitoring(user_id, True)
                         st.rerun()
 
             with action_col3:
-                if st.button(f"📊 View Data", key=f"view_{user_id}"):
+                if st.button(f"View Data", key=f"view_{user_id}"):
                     st.session_state.selected_user = user_id
                     st.rerun()
 
             with action_col4:
-                if st.button(f"🗑️ Delete", key=f"delete_{user_id}"):
+                if st.button(f"Delete", key=f"delete_{user_id}"):
                     if st.session_state.get(f"confirm_delete_{user_id}", False):
                         user_jobs = [j for j in JobManager.get_jobs_by_platform("twitter") if j.entity_id == user_id]
                         if user_jobs:
@@ -204,9 +223,9 @@ def show_user_details(user_id: int):
 
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.subheader(f"📊 Data for **@{username}**")
+        st.subheader(f"Data for **@{username}**")
     with col2:
-        if st.button("← Back to List"):
+        if st.button("Back to List"):
             st.session_state.selected_user = None
             st.rerun()
 
@@ -233,7 +252,7 @@ def show_user_details(user_id: int):
 
     st.divider()
 
-    tab1, tab2, tab3 = st.tabs(["📈 Engagement Over Time", "🏆 Top Tweets", "📋 All Tweets"])
+    tab1, tab2, tab3 = st.tabs(["Engagement Over Time", "Top Tweets", "All Tweets"])
 
     with tab1:
         st.subheader("Engagement Over Time")
@@ -257,13 +276,13 @@ def show_user_details(user_id: int):
                 st.write(f"**{tweet['text'][:200]}...**" if len(tweet['text']) > 200 else f"**{tweet['text']}**")
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
-                    st.caption(f"❤️ {tweet['like_count']:,} likes")
+                    st.caption(f"Likes: {tweet['like_count']:,}")
                 with col2:
-                    st.caption(f"🔁 {tweet['retweet_count']:,} retweets")
+                    st.caption(f"Retweets: {tweet['retweet_count']:,}")
                 with col3:
-                    st.caption(f"💬 {tweet['reply_count']:,} replies")
+                    st.caption(f"Replies: {tweet['reply_count']:,}")
                 with col4:
-                    st.caption(f"📅 {pd.to_datetime(tweet['created_at']).strftime('%Y-%m-%d')}")
+                    st.caption(f"Date: {pd.to_datetime(tweet['created_at']).strftime('%Y-%m-%d')}")
                 st.divider()
 
     with tab3:
@@ -276,7 +295,7 @@ def show_user_details(user_id: int):
 
         csv = df.to_csv(index=False)
         st.download_button(
-            "📥 Download as CSV",
+            "Download as CSV",
             data=csv,
             file_name=f"twitter_{username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
             mime="text/csv"
@@ -284,7 +303,7 @@ def show_user_details(user_id: int):
 
 
 def main():
-    st.title("🐦 Twitter Monitoring")
+    st.title("Twitter Monitoring")
 
     check_credentials()
 

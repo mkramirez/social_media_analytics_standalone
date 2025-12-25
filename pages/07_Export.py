@@ -16,14 +16,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database.session_db import get_session_db
 
 
-st.set_page_config(page_title="Data Export", page_icon="💾", layout="wide")
+st.set_page_config(page_title="Data Export", page_icon="📄", layout="wide")
 
 
 def main():
-    st.title("💾 Export Data")
+    st.title("Export Data")
 
     st.write("""
-    ⚠️ **Important:** All data is stored in memory and will be deleted when you close this browser tab.
+    **Important:** All data is stored in memory and will be deleted when you close this browser tab.
 
     Use this page to download your data before closing the application.
     """)
@@ -34,7 +34,7 @@ def main():
     st.divider()
 
     # Database overview
-    st.subheader("📊 Database Overview")
+    st.subheader("Database Overview")
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -54,9 +54,9 @@ def main():
     st.divider()
 
     # Export options
-    st.subheader("📥 Export Options")
+    st.subheader("Export Options")
 
-    tab1, tab2, tab3 = st.tabs(["💾 Complete Database", "📄 CSV Exports", "📊 Platform-Specific"])
+    tab1, tab2, tab3 = st.tabs(["Complete Database", "CSV Exports", "Platform-Specific"])
 
     with tab1:
         st.write("""
@@ -66,19 +66,19 @@ def main():
         You can later import this into another SQLite database or use it for backup.
         """)
 
-        if st.button("📥 Download Complete Database (SQL)", use_container_width=True):
+        if st.button("Download Complete Database (SQL)", use_container_width=True):
             try:
                 sql_dump = db.export_to_file()
 
                 st.download_button(
-                    label="💾 Download Database.sql",
+                    label="Download Database.sql",
                     data=sql_dump,
                     file_name=f"social_analytics_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sql",
                     mime="application/sql",
                     use_container_width=True
                 )
 
-                st.success("✅ Database export ready for download!")
+                st.success("Database export ready for download!")
 
             except Exception as e:
                 st.error(f"Error exporting database: {e}")
@@ -88,7 +88,7 @@ def main():
 
         # Twitch
         if stats['twitch_records'] > 0:
-            st.write("**🎮 Twitch Data**")
+            st.write("**Twitch Data**")
 
             db.execute("""
                 SELECT
@@ -110,7 +110,7 @@ def main():
                 csv = df.to_csv(index=False)
 
                 st.download_button(
-                    f"📥 Download Twitch Data ({len(twitch_data)} records)",
+                    f"Download Twitch Data ({len(twitch_data)} records)",
                     data=csv,
                     file_name=f"twitch_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv"
@@ -118,7 +118,7 @@ def main():
 
         # Twitter
         if stats['twitter_tweets'] > 0:
-            st.write("**🐦 Twitter Data**")
+            st.write("**Twitter Data**")
 
             db.execute("""
                 SELECT
@@ -140,7 +140,7 @@ def main():
                 csv = df.to_csv(index=False)
 
                 st.download_button(
-                    f"📥 Download Twitter Data ({len(twitter_data)} tweets)",
+                    f"Download Twitter Data ({len(twitter_data)} tweets)",
                     data=csv,
                     file_name=f"twitter_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv"
@@ -148,7 +148,7 @@ def main():
 
         # YouTube
         if stats['youtube_videos'] > 0:
-            st.write("**📺 YouTube Data**")
+            st.write("**YouTube Data**")
 
             db.execute("""
                 SELECT
@@ -169,7 +169,7 @@ def main():
                 csv = df.to_csv(index=False)
 
                 st.download_button(
-                    f"📥 Download YouTube Data ({len(youtube_data)} videos)",
+                    f"Download YouTube Data ({len(youtube_data)} videos)",
                     data=csv,
                     file_name=f"youtube_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv"
@@ -177,7 +177,7 @@ def main():
 
         # Reddit
         if stats['reddit_posts'] > 0:
-            st.write("**🔴 Reddit Data**")
+            st.write("**Reddit Data**")
 
             db.execute("""
                 SELECT
@@ -199,7 +199,7 @@ def main():
                 csv = df.to_csv(index=False)
 
                 st.download_button(
-                    f"📥 Download Reddit Data ({len(reddit_data)} posts)",
+                    f"Download Reddit Data ({len(reddit_data)} posts)",
                     data=csv,
                     file_name=f"reddit_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv"
@@ -214,15 +214,15 @@ def main():
         st.info("Use the individual platform pages to export data for specific channels/users/subreddits with charts and visualizations.")
 
         st.write("Go to:")
-        st.write("- 🎮 **Twitch** page → View channel → Download CSV")
-        st.write("- 🐦 **Twitter** page → View user → Download CSV")
-        st.write("- 📺 **YouTube** page → View channel → Download CSV")
-        st.write("- 🔴 **Reddit** page → View subreddit → Download CSV")
+        st.write("- **Twitch** page → View channel → Download CSV")
+        st.write("- **Twitter** page → View user → Download CSV")
+        st.write("- **YouTube** page → View channel → Download CSV")
+        st.write("- **Reddit** page → View subreddit → Download CSV")
 
     st.divider()
 
     # Tips
-    st.subheader("💡 Tips")
+    st.subheader("Tips")
 
     st.write("""
     - **Download regularly:** Export your data periodically during long sessions

@@ -15,20 +15,20 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.credential_manager import CredentialManager
 
 
-st.set_page_config(page_title="API Setup", page_icon="⚙️", layout="wide")
+st.set_page_config(page_title="API Setup", page_icon="[Settings]", layout="wide")
 
 
 def show_twitch_setup():
     """Show Twitch credential setup."""
-    st.subheader("🎮 Twitch API Setup")
+    st.subheader("Twitch API Setup")
 
     if CredentialManager.has_twitch_credentials():
-        st.success("✅ Twitch credentials are configured")
+        st.success("Success: Twitch credentials are configured")
 
         creds = CredentialManager.get_twitch_credentials()
         st.write(f"**Client ID:** {creds.client_id[:8]}...")
 
-        if st.button("🗑️ Clear Twitch Credentials", key="clear_twitch"):
+        if st.button("Clear Twitch Credentials", key="clear_twitch"):
             if st.session_state.get('confirm_clear_twitch', False):
                 if 'twitch_credentials' in st.session_state:
                     del st.session_state.twitch_credentials
@@ -40,7 +40,7 @@ def show_twitch_setup():
                 st.warning("Click again to confirm")
 
     else:
-        with st.expander("ℹ️ How to get Twitch API credentials", expanded=False):
+        with st.expander("How to get Twitch API credentials", expanded=False):
             st.markdown("""
             1. Go to https://dev.twitch.tv/console
             2. Log in with your Twitch account
@@ -78,22 +78,22 @@ def show_twitch_setup():
                     st.error("Invalid credentials (too short)")
                 else:
                     CredentialManager.set_twitch_credentials(client_id, client_secret)
-                    st.success("✅ Twitch credentials saved!")
+                    st.success("Success: Twitch credentials saved!")
                     st.balloons()
                     st.rerun()
 
 
 def show_twitter_setup():
     """Show Twitter credential setup."""
-    st.subheader("🐦 Twitter API Setup")
+    st.subheader("Twitter API Setup")
 
     if CredentialManager.has_twitter_credentials():
-        st.success("✅ Twitter credentials are configured")
+        st.success("Success: Twitter credentials are configured")
 
         creds = CredentialManager.get_twitter_credentials()
         st.write(f"**Bearer Token:** {creds.bearer_token[:15]}...")
 
-        if st.button("🗑️ Clear Twitter Credentials", key="clear_twitter"):
+        if st.button("Clear Twitter Credentials", key="clear_twitter"):
             if st.session_state.get('confirm_clear_twitter', False):
                 if 'twitter_credentials' in st.session_state:
                     del st.session_state.twitter_credentials
@@ -105,7 +105,7 @@ def show_twitter_setup():
                 st.warning("Click again to confirm")
 
     else:
-        with st.expander("ℹ️ How to get Twitter API credentials", expanded=False):
+        with st.expander("How to get Twitter API credentials", expanded=False):
             st.markdown("""
             1. Go to https://developer.twitter.com/
             2. Log in with your Twitter account
@@ -136,22 +136,22 @@ def show_twitter_setup():
                     st.error("Invalid Bearer Token (too short)")
                 else:
                     CredentialManager.set_twitter_credentials(bearer_token)
-                    st.success("✅ Twitter credentials saved!")
+                    st.success("Success: Twitter credentials saved!")
                     st.balloons()
                     st.rerun()
 
 
 def show_youtube_setup():
     """Show YouTube credential setup."""
-    st.subheader("📺 YouTube API Setup")
+    st.subheader("YouTube API Setup")
 
     if CredentialManager.has_youtube_credentials():
-        st.success("✅ YouTube credentials are configured")
+        st.success("Success: YouTube credentials are configured")
 
         creds = CredentialManager.get_youtube_credentials()
         st.write(f"**API Key:** {creds.api_key[:15]}...")
 
-        if st.button("🗑️ Clear YouTube Credentials", key="clear_youtube"):
+        if st.button("Clear YouTube Credentials", key="clear_youtube"):
             if st.session_state.get('confirm_clear_youtube', False):
                 if 'youtube_credentials' in st.session_state:
                     del st.session_state.youtube_credentials
@@ -163,7 +163,7 @@ def show_youtube_setup():
                 st.warning("Click again to confirm")
 
     else:
-        with st.expander("ℹ️ How to get YouTube API credentials", expanded=False):
+        with st.expander("How to get YouTube API credentials", expanded=False):
             st.markdown("""
             1. Go to https://console.cloud.google.com/
             2. Log in with your Google account
@@ -199,23 +199,23 @@ def show_youtube_setup():
                     st.error("Invalid API Key (too short)")
                 else:
                     CredentialManager.set_youtube_credentials(api_key)
-                    st.success("✅ YouTube credentials saved!")
+                    st.success("Success: YouTube credentials saved!")
                     st.balloons()
                     st.rerun()
 
 
 def show_reddit_setup():
     """Show Reddit credential setup."""
-    st.subheader("🔴 Reddit API Setup")
+    st.subheader("Reddit API Setup")
 
     if CredentialManager.has_reddit_credentials():
-        st.success("✅ Reddit credentials are configured")
+        st.success("Success: Reddit credentials are configured")
 
         creds = CredentialManager.get_reddit_credentials()
         st.write(f"**Client ID:** {creds.client_id[:8]}...")
         st.write(f"**User Agent:** {creds.user_agent}")
 
-        if st.button("🗑️ Clear Reddit Credentials", key="clear_reddit"):
+        if st.button("Clear Reddit Credentials", key="clear_reddit"):
             if st.session_state.get('confirm_clear_reddit', False):
                 if 'reddit_credentials' in st.session_state:
                     del st.session_state.reddit_credentials
@@ -227,7 +227,7 @@ def show_reddit_setup():
                 st.warning("Click again to confirm")
 
     else:
-        with st.expander("ℹ️ How to get Reddit API credentials", expanded=False):
+        with st.expander("How to get Reddit API credentials", expanded=False):
             st.markdown("""
             1. Go to https://www.reddit.com/prefs/apps
             2. Log in with your Reddit account
@@ -281,14 +281,14 @@ def show_reddit_setup():
                     st.error("Invalid User Agent (too short)")
                 else:
                     CredentialManager.set_reddit_credentials(client_id, client_secret, user_agent)
-                    st.success("✅ Reddit credentials saved!")
+                    st.success("Success: Reddit credentials saved!")
                     st.balloons()
                     st.rerun()
 
 
 def main():
     """Main setup page."""
-    st.title("⚙️ Setup - API Credentials")
+    st.title("Setup - API Credentials")
 
     st.write("""
     Configure your API credentials for each platform you want to monitor.
@@ -303,7 +303,7 @@ def main():
     st.divider()
 
     # Show setup status
-    st.subheader("📋 Setup Status")
+    st.subheader("Setup Status")
 
     status = CredentialManager.get_setup_status()
 
@@ -311,32 +311,32 @@ def main():
 
     with col1:
         if status['twitch']:
-            st.success("✅ Twitch")
+            st.success("✓ Twitch")
         else:
-            st.warning("⚠️ Twitch")
+            st.warning("Note: Twitch")
 
     with col2:
         if status['twitter']:
-            st.success("✅ Twitter")
+            st.success("✓ Twitter")
         else:
-            st.warning("⚠️ Twitter")
+            st.warning("Note: Twitter")
 
     with col3:
         if status['youtube']:
-            st.success("✅ YouTube")
+            st.success("✓ YouTube")
         else:
-            st.warning("⚠️ YouTube")
+            st.warning("Note: YouTube")
 
     with col4:
         if status['reddit']:
-            st.success("✅ Reddit")
+            st.success("✓ Reddit")
         else:
-            st.warning("⚠️ Reddit")
+            st.warning("Note: Reddit")
 
     st.divider()
 
     # Platform tabs
-    tab1, tab2, tab3, tab4 = st.tabs(["🎮 Twitch", "🐦 Twitter", "📺 YouTube", "🔴 Reddit"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Twitch", "Twitter", "YouTube", "Reddit"])
 
     with tab1:
         show_twitch_setup()
@@ -353,12 +353,12 @@ def main():
     st.divider()
 
     # Quick actions
-    st.subheader("🔧 Quick Actions")
+    st.subheader("Quick Actions")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("🗑️ Clear All Credentials", use_container_width=True):
+        if st.button("Clear All Credentials", use_container_width=True):
             if st.session_state.get('confirm_clear_all', False):
                 CredentialManager.clear_all_credentials()
                 st.session_state.confirm_clear_all = False
@@ -371,7 +371,7 @@ def main():
     with col2:
         configured = [p for p, c in status.items() if c]
         if configured:
-            st.success(f"✅ {len(configured)}/4 platforms configured")
+            st.success(f"✓ {len(configured)}/4 platforms configured")
         else:
             st.info("Configure at least one platform to get started")
 

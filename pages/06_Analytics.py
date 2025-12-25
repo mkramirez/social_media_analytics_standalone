@@ -17,7 +17,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database.session_db import get_session_db
 
 
-st.set_page_config(page_title="Data Analytics", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Data Analytics", page_icon=None, layout="wide")
 
 
 def analyze_sentiment(text: str) -> dict:
@@ -42,13 +42,13 @@ def analyze_sentiment(text: str) -> dict:
 
 
 def main():
-    st.title("📊 Analytics Dashboard")
+    st.title("Analytics Dashboard")
 
     db = get_session_db()
     stats = db.get_statistics()
 
     # Overview
-    st.subheader("📈 Overview")
+    st.subheader("Overview")
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -70,7 +70,7 @@ def main():
     st.divider()
 
     # Platform breakdown
-    st.subheader("🌐 Platform Breakdown")
+    st.subheader("Platform Breakdown")
 
     platform_data = {
         'Platform': ['Twitch', 'Twitter', 'YouTube', 'Reddit'],
@@ -94,7 +94,7 @@ def main():
 
     # Twitter sentiment analysis
     if stats['twitter_tweets'] > 0:
-        st.subheader("💭 Twitter Sentiment Analysis")
+        st.subheader("Twitter Sentiment Analysis")
 
         db.execute("""
             SELECT text, like_count, retweet_count, created_at
@@ -125,8 +125,7 @@ def main():
 
                 st.write("**Sentiment Distribution:**")
                 for sentiment, count in sentiment_counts.items():
-                    emoji = "😊" if sentiment == "positive" else "😐" if sentiment == "neutral" else "😞"
-                    st.write(f"{emoji} **{sentiment.title()}:** {count} ({count/len(df_sentiment)*100:.1f}%)")
+                    st.write(f"**{sentiment.title()}:** {count} ({count/len(df_sentiment)*100:.1f}%)")
 
             with col2:
                 fig = px.histogram(df_sentiment, x='sentiment', title="Sentiment Distribution",
@@ -137,16 +136,16 @@ def main():
             # Top positive and negative tweets
             st.write("**Most Positive Tweet:**")
             most_positive = df_sentiment.nlargest(1, 'polarity').iloc[0]
-            st.info(f"💚 {most_positive['text']}... (Polarity: {most_positive['polarity']:.2f})")
+            st.info(f"{most_positive['text']}... (Polarity: {most_positive['polarity']:.2f})")
 
             st.write("**Most Negative Tweet:**")
             most_negative = df_sentiment.nsmallest(1, 'polarity').iloc[0]
-            st.warning(f"💔 {most_negative['text']}... (Polarity: {most_negative['polarity']:.2f})")
+            st.warning(f"{most_negative['text']}... (Polarity: {most_negative['polarity']:.2f})")
 
     st.divider()
 
     # Engagement metrics
-    st.subheader("📈 Engagement Metrics")
+    st.subheader("Engagement Metrics")
 
     tab1, tab2, tab3 = st.tabs(["Twitter", "YouTube", "Reddit"])
 

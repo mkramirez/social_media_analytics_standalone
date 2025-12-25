@@ -17,18 +17,37 @@ from utils.job_manager import JobManager
 from src.platforms.youtube_integration import YouTubeDatabase, collect_youtube_data
 
 
-st.set_page_config(page_title="YouTube Monitoring", page_icon="📺", layout="wide")
+st.set_page_config(page_title="YouTube Monitoring", layout="wide")
+
+
+# Auto-execution for monitoring
+if st.session_state.get('monitoring_active', False):
+    db = get_session_db()
+
+    # Execute due jobs for YouTube
+    due_jobs = JobManager.get_jobs_due_for_run(platform='youtube')
+
+    for job in due_jobs:
+        try:
+            success = collect_youtube_data(job.entity_name, db, is_channel_id=False)
+
+            if success:
+                JobManager.mark_job_run(job.id)
+            else:
+                JobManager.mark_job_error(job.id, "Collection failed")
+        except Exception as e:
+            JobManager.mark_job_error(job.id, str(e))
 
 
 def check_credentials():
     if not CredentialManager.has_youtube_credentials():
-        st.warning("⚠️ YouTube credentials not configured")
+        st.warning("YouTube credentials not configured")
         st.info("Please go to the **Setup** page to configure your YouTube API credentials")
         st.stop()
 
 
 def main():
-    st.title("📺 YouTube Monitoring")
+    st.title("YouTube Monitoring")
     check_credentials()
 
     db = get_session_db()
@@ -43,7 +62,7 @@ def main():
 
 
 def show_add_channel(youtube_db, db):
-    st.subheader("📝 Add YouTube Channel")
+    st.subheader("Add YouTube Channel")
 
     with st.form("add_channel_form"):
         search_query = st.text_input("Channel Name or ID", placeholder="MrBeast or UC...")
@@ -64,7 +83,7 @@ def show_add_channel(youtube_db, db):
                 with st.spinner("Searching and collecting data..."):
                     success = collect_youtube_data(search_query, db, is_channel_id=is_channel_id)
                     if success:
-                        st.success("✅ Channel added successfully!")
+                        st.success("Channel added successfully!")
                         if start_monitoring:
                             # Get the channel we just added
                             channels = youtube_db.get_all_channels()
@@ -72,7 +91,7 @@ def show_add_channel(youtube_db, db):
                                 latest_channel = channels[0]
                                 JobManager.add_job("youtube", latest_channel['id'], latest_channel['channel_name'], interval)
                                 youtube_db.set_monitoring(latest_channel['id'], True)
-                                st.success(f"✅ Started monitoring (every {interval} min)")
+                                st.success(f"Started monitoring (every {interval} min)")
                         st.balloons()
                         st.rerun()
                     else:
@@ -80,7 +99,7 @@ def show_add_channel(youtube_db, db):
 
 
 def show_channels_list(youtube_db):
-    st.subheader("📋 Monitored Channels")
+    st.subheader("Monitored Channels")
 
     channels = youtube_db.get_all_channels()
 
@@ -89,7 +108,7 @@ def show_channels_list(youtube_db):
         return
 
     for channel in channels:
-        with st.expander(f"📺 **{channel['channel_name']}**"):
+        with st.expander(f"**{channel['channel_name']}**"):
             stats = youtube_db.get_channel_statistics(channel['id'])
 
             col1, col2, col3 = st.columns(3)
@@ -100,13 +119,13 @@ def show_channels_list(youtube_db):
             with col3:
                 jobs = [j for j in JobManager.get_jobs_by_platform("youtube") if j.entity_id == channel['id']]
                 if jobs and jobs[0].is_active:
-                    st.success("✅ Monitoring")
+                    st.success("Monitoring")
 
             st.divider()
 
             c1, c2, c3, c4 = st.columns(4)
             with c1:
-                if st.button("🔄 Collect", key=f"collect_yt_{channel['id']}"):
+                if st.button("Collect", key=f"collect_yt_{channel['id']}"):
                     with st.spinner("Collecting..."):
                         collect_youtube_data(channel['channel_id'], db, is_channel_id=True)
                         st.rerun()
@@ -114,23 +133,23 @@ def show_channels_list(youtube_db):
                 jobs = [j for j in JobManager.get_jobs_by_platform("youtube") if j.entity_id == channel['id']]
                 if jobs:
                     if jobs[0].is_active:
-                        if st.button("⏸️ Pause", key=f"pause_yt_{channel['id']}"):
+                        if st.button("Pause", key=f"pause_yt_{channel['id']}"):
                             JobManager.pause_job(jobs[0].id)
                             st.rerun()
                     else:
-                        if st.button("▶️ Resume", key=f"resume_yt_{channel['id']}"):
+                        if st.button("Resume", key=f"resume_yt_{channel['id']}"):
                             JobManager.resume_job(jobs[0].id)
                             st.rerun()
                 else:
-                    if st.button("▶️ Start", key=f"start_yt_{channel['id']}"):
+                    if st.button("Start", key=f"start_yt_{channel['id']}"):
                         JobManager.add_job("youtube", channel['id'], channel['channel_name'], 120)
                         st.rerun()
             with c3:
-                if st.button("📊 View", key=f"view_yt_{channel['id']}"):
+                if st.button("View", key=f"view_yt_{channel['id']}"):
                     st.session_state.selected_channel_yt = channel['id']
                     st.rerun()
             with c4:
-                if st.button("🗑️ Delete", key=f"del_yt_{channel['id']}"):
+                if st.button("Delete", key=f"del_yt_{channel['id']}"):
                     if st.session_state.get(f"confirm_del_yt_{channel['id']}", False):
                         jobs = [j for j in JobManager.get_jobs_by_platform("youtube") if j.entity_id == channel['id']]
                         if jobs:
@@ -152,7 +171,7 @@ def show_channel_details(channel_id, youtube_db, db):
 
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.subheader(f"📊 {channel['channel_name']}")
+        st.subheader(f"{channel['channel_name']}")
     with col2:
         if st.button("← Back"):
             st.session_state.selected_channel_yt = None
@@ -179,7 +198,7 @@ def show_channel_details(channel_id, youtube_db, db):
 
     st.divider()
 
-    tab1, tab2 = st.tabs(["📈 Performance", "📋 All Videos"])
+    tab1, tab2 = st.tabs(["Performance", "All Videos"])
 
     with tab1:
         fig = px.bar(df.nlargest(10, 'view_count'), x='title', y='view_count', title="Top 10 Videos by Views")
@@ -191,7 +210,7 @@ def show_channel_details(channel_id, youtube_db, db):
         st.dataframe(display_df, use_container_width=True, hide_index=True)
 
         csv = df.to_csv(index=False)
-        st.download_button("📥 Download CSV", data=csv, file_name=f"youtube_{channel['channel_name']}_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv")
+        st.download_button("Download CSV", data=csv, file_name=f"youtube_{channel['channel_name']}_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv")
 
 
 if __name__ == "__main__":
