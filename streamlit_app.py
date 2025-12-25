@@ -12,7 +12,7 @@ Features:
 - Export database before closing
 
 Author: Social Media Analytics Team
-Version: 2.0.0 (Standalone)
+Version: 2.0.1 (No Emoji)
 """
 
 import streamlit as st
