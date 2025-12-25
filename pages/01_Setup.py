@@ -286,6 +286,70 @@ def show_reddit_setup():
                     st.rerun()
 
 
+def show_anthropic_setup():
+    """Show Anthropic API setup."""
+    st.subheader("Anthropic API Setup")
+
+    if CredentialManager.has_anthropic_credentials():
+        st.success("Success: Anthropic credentials are configured")
+
+        creds = CredentialManager.get_anthropic_credentials()
+        st.write(f"**API Key:** {creds.api_key[:15]}...")
+
+        if st.button("Clear Anthropic Credentials", key="clear_anthropic"):
+            if st.session_state.get('confirm_clear_anthropic', False):
+                if 'anthropic_credentials' in st.session_state:
+                    del st.session_state.anthropic_credentials
+                st.session_state.confirm_clear_anthropic = False
+                st.success("Anthropic credentials cleared")
+                st.rerun()
+            else:
+                st.session_state.confirm_clear_anthropic = True
+                st.warning("Click again to confirm")
+
+    else:
+        with st.expander("How to get Anthropic API credentials", expanded=False):
+            st.markdown("""
+            1. Go to https://console.anthropic.com/
+            2. Sign up or log in with your account
+            3. Navigate to **"API Keys"** in the settings
+            4. Click **"Create Key"**
+            5. Give your key a name (e.g., "Social Media Analytics")
+            6. Copy the **API Key** (starts with "sk-ant-...")
+
+            **Note:** Anthropic Claude API is used for advanced sentiment analysis.
+            Pricing is pay-as-you-go. See https://www.anthropic.com/pricing for details.
+            """)
+
+        with st.form("anthropic_form"):
+            st.write("Enter your Anthropic API credentials:")
+
+            api_key = st.text_input(
+                "API Key",
+                type="password",
+                help="Your Anthropic API Key (starts with sk-ant-...)"
+            )
+
+            submitted = st.form_submit_button("Save Anthropic Credentials", use_container_width=True)
+
+            if submitted:
+                if not api_key:
+                    st.error("API Key is required")
+                elif len(api_key) < 20:
+                    st.error("Invalid API Key (too short)")
+                elif not api_key.startswith("sk-ant-"):
+                    st.warning("API Key should start with 'sk-ant-'. Saving anyway...")
+                    CredentialManager.set_anthropic_credentials(api_key)
+                    st.success("Success: Anthropic credentials saved!")
+                    st.balloons()
+                    st.rerun()
+                else:
+                    CredentialManager.set_anthropic_credentials(api_key)
+                    st.success("Success: Anthropic credentials saved!")
+                    st.balloons()
+                    st.rerun()
+
+
 def main():
     """Main setup page."""
     st.title("Setup - API Credentials")
@@ -307,7 +371,7 @@ def main():
 
     status = CredentialManager.get_setup_status()
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
         if status['twitch']:
@@ -333,10 +397,16 @@ def main():
         else:
             st.warning("Note: Reddit")
 
+    with col5:
+        if status['anthropic']:
+            st.success("✓ Anthropic")
+        else:
+            st.warning("Note: Anthropic")
+
     st.divider()
 
     # Platform tabs
-    tab1, tab2, tab3, tab4 = st.tabs(["Twitch", "Twitter", "YouTube", "Reddit"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Twitch", "Twitter", "YouTube", "Reddit", "Anthropic AI"])
 
     with tab1:
         show_twitch_setup()
@@ -349,6 +419,9 @@ def main():
 
     with tab4:
         show_reddit_setup()
+
+    with tab5:
+        show_anthropic_setup()
 
     st.divider()
 
@@ -371,7 +444,7 @@ def main():
     with col2:
         configured = [p for p, c in status.items() if c]
         if configured:
-            st.success(f"✓ {len(configured)}/4 platforms configured")
+            st.success(f"✓ {len(configured)}/5 platforms configured")
         else:
             st.info("Configure at least one platform to get started")
 

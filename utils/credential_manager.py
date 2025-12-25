@@ -37,6 +37,12 @@ class RedditCredentials:
     user_agent: str
 
 
+@dataclass
+class AnthropicCredentials:
+    """Anthropic API credentials."""
+    api_key: str
+
+
 class CredentialManager:
     """Manages API credentials in session state."""
 
@@ -112,13 +118,31 @@ class CredentialManager:
         return 'reddit_credentials' in st.session_state
 
     @staticmethod
+    def set_anthropic_credentials(api_key: str):
+        """Store Anthropic credentials."""
+        st.session_state.anthropic_credentials = AnthropicCredentials(
+            api_key=api_key
+        )
+
+    @staticmethod
+    def get_anthropic_credentials() -> Optional[AnthropicCredentials]:
+        """Get Anthropic credentials."""
+        return st.session_state.get('anthropic_credentials')
+
+    @staticmethod
+    def has_anthropic_credentials() -> bool:
+        """Check if Anthropic credentials are set."""
+        return 'anthropic_credentials' in st.session_state
+
+    @staticmethod
     def clear_all_credentials():
         """Clear all stored credentials."""
         keys_to_delete = [
             'twitch_credentials',
             'twitter_credentials',
             'youtube_credentials',
-            'reddit_credentials'
+            'reddit_credentials',
+            'anthropic_credentials'
         ]
 
         for key in keys_to_delete:
@@ -132,7 +156,8 @@ class CredentialManager:
             'twitch': CredentialManager.has_twitch_credentials(),
             'twitter': CredentialManager.has_twitter_credentials(),
             'youtube': CredentialManager.has_youtube_credentials(),
-            'reddit': CredentialManager.has_reddit_credentials()
+            'reddit': CredentialManager.has_reddit_credentials(),
+            'anthropic': CredentialManager.has_anthropic_credentials()
         }
 
     @staticmethod

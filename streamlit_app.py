@@ -58,11 +58,20 @@ def show_sidebar():
         st.subheader("Setup Status")
         status = CredentialManager.get_setup_status()
 
-        for platform, configured in status.items():
-            if configured:
-                st.success(f"✓ {platform.title()}")
-            else:
-                st.warning(f"⚠ {platform.title()} - Not configured")
+        # Show social media platforms first
+        social_platforms = ['twitch', 'twitter', 'youtube', 'reddit']
+        for platform in social_platforms:
+            if platform in status:
+                if status[platform]:
+                    st.success(f"✓ {platform.title()}")
+                else:
+                    st.warning(f"⚠ {platform.title()} - Not configured")
+
+        # Show Anthropic API status
+        if status.get('anthropic'):
+            st.success("✓ Anthropic API (Sentiment)")
+        else:
+            st.info("Anthropic API - Optional")
 
         if not CredentialManager.is_any_platform_configured():
             st.info("Go to **Setup** to configure API credentials")

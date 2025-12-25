@@ -117,6 +117,7 @@ class SessionDatabase:
                 subreddit_id INTEGER NOT NULL,
                 post_id TEXT UNIQUE NOT NULL,
                 title TEXT,
+                selftext TEXT,
                 author TEXT,
                 created_utc TIMESTAMP,
                 score INTEGER,
@@ -127,11 +128,68 @@ class SessionDatabase:
             )
         """)
 
+        # Twitch chat messages (for enhanced integration)
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS twitch_chat_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                record_id INTEGER NOT NULL,
+                username TEXT NOT NULL,
+                message TEXT NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (record_id) REFERENCES twitch_stream_records(id) ON DELETE CASCADE
+            )
+        """)
+
+        # Sentiment analysis results tables
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sentiment_twitch_chat (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                message_id INTEGER NOT NULL,
+                polarity REAL NOT NULL,
+                subjectivity REAL NOT NULL,
+                sentiment TEXT NOT NULL,
+                analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                analysis_method TEXT DEFAULT 'textblob',
+                FOREIGN KEY (message_id) REFERENCES twitch_chat_messages(id) ON DELETE CASCADE
+            )
+        """)
+
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sentiment_twitter (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tweet_id INTEGER NOT NULL,
+                polarity REAL NOT NULL,
+                subjectivity REAL NOT NULL,
+                sentiment TEXT NOT NULL,
+                analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                analysis_method TEXT DEFAULT 'textblob',
+                FOREIGN KEY (tweet_id) REFERENCES twitter_tweets(id) ON DELETE CASCADE
+            )
+        """)
+
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sentiment_reddit (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                post_id INTEGER NOT NULL,
+                polarity REAL NOT NULL,
+                subjectivity REAL NOT NULL,
+                sentiment TEXT NOT NULL,
+                analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                analysis_method TEXT DEFAULT 'textblob',
+                FOREIGN KEY (post_id) REFERENCES reddit_posts(id) ON DELETE CASCADE
+            )
+        """)
+
         self.conn.commit()
 
     def execute(self, query: str, params: tuple = ()) -> sqlite3.Cursor:
         """Execute a SQL query."""
         return self.cursor.execute(query, params)
+
+    def execute_query(self, query: str, params: tuple = ()) -> List[tuple]:
+        """Execute a query and return results as list of tuples."""
+        self.cursor.execute(query, params)
+        return self.cursor.fetchall()
 
     def fetchone(self) -> Optional[Dict]:
         """Fetch one row as dictionary."""
@@ -214,6 +272,9 @@ class SessionDatabase:
         self.execute("SELECT COUNT(*) as count FROM twitch_stream_records")
         stats['twitch_records'] = self.fetchone()['count']
 
+        self.execute("SELECT COUNT(*) as count FROM twitch_chat_messages")
+        stats['twitch_chat_messages'] = self.fetchone()['count']
+
         # Twitter
         self.execute("SELECT COUNT(*) as count FROM twitter_users")
         stats['twitter_users'] = self.fetchone()['count']
@@ -234,6 +295,16 @@ class SessionDatabase:
 
         self.execute("SELECT COUNT(*) as count FROM reddit_posts")
         stats['reddit_posts'] = self.fetchone()['count']
+
+        # Sentiment Analysis
+        self.execute("SELECT COUNT(*) as count FROM sentiment_twitch_chat")
+        stats['sentiment_twitch'] = self.fetchone()['count']
+
+        self.execute("SELECT COUNT(*) as count FROM sentiment_twitter")
+        stats['sentiment_twitter'] = self.fetchone()['count']
+
+        self.execute("SELECT COUNT(*) as count FROM sentiment_reddit")
+        stats['sentiment_reddit'] = self.fetchone()['count']
 
         return stats
 

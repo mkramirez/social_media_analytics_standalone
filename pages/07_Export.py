@@ -42,6 +42,8 @@ def main():
 
     with col1:
         st.metric("Twitch Records", f"{stats['twitch_records']:,}")
+        if stats.get('twitch_chat_messages', 0) > 0:
+            st.caption(f"{stats['twitch_chat_messages']:,} chat messages")
     with col2:
         st.metric("Twitter Tweets", f"{stats['twitter_tweets']:,}")
     with col3:
@@ -50,6 +52,24 @@ def main():
         st.metric("Reddit Posts", f"{stats['reddit_posts']:,}")
 
     st.metric("**Total Records**", f"{total_records:,}")
+
+    # Sentiment Analysis Statistics
+    total_sentiment = stats.get('sentiment_twitch', 0) + stats.get('sentiment_twitter', 0) + stats.get('sentiment_reddit', 0)
+
+    if total_sentiment > 0:
+        st.divider()
+        st.subheader("Sentiment Analysis")
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.metric("Twitch Chat Analyzed", f"{stats.get('sentiment_twitch', 0):,}")
+        with col2:
+            st.metric("Twitter Analyzed", f"{stats.get('sentiment_twitter', 0):,}")
+        with col3:
+            st.metric("Reddit Analyzed", f"{stats.get('sentiment_reddit', 0):,}")
+        with col4:
+            st.metric("**Total Analyzed**", f"{total_sentiment:,}")
 
     st.divider()
 
@@ -202,6 +222,109 @@ def main():
                     f"Download Reddit Data ({len(reddit_data)} posts)",
                     data=csv,
                     file_name=f"reddit_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+
+        # Sentiment Analysis Data
+        st.divider()
+        st.write("**Sentiment Analysis Results**")
+
+        # Twitch Chat Sentiment
+        if stats.get('sentiment_twitch', 0) > 0:
+            st.write("**Twitch Chat Sentiment**")
+
+            db.execute("""
+                SELECT
+                    tc.channel_name,
+                    tcm.username,
+                    tcm.message,
+                    tcm.timestamp,
+                    s.sentiment,
+                    s.polarity,
+                    s.subjectivity,
+                    s.analysis_method
+                FROM sentiment_twitch_chat s
+                JOIN twitch_chat_messages tcm ON s.message_id = tcm.id
+                JOIN twitch_stream_records tsr ON tcm.record_id = tsr.id
+                JOIN twitch_channels tc ON tsr.channel_id = tc.id
+                ORDER BY tcm.timestamp DESC
+            """)
+            sentiment_data = db.fetchall()
+
+            if sentiment_data:
+                df = pd.DataFrame(sentiment_data)
+                csv = df.to_csv(index=False)
+
+                st.download_button(
+                    f"Download Twitch Sentiment Data ({len(sentiment_data)} analyzed messages)",
+                    data=csv,
+                    file_name=f"twitch_sentiment_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+
+        # Twitter Sentiment
+        if stats.get('sentiment_twitter', 0) > 0:
+            st.write("**Twitter Sentiment**")
+
+            db.execute("""
+                SELECT
+                    u.username,
+                    t.text,
+                    t.created_at,
+                    t.like_count,
+                    t.retweet_count,
+                    s.sentiment,
+                    s.polarity,
+                    s.subjectivity,
+                    s.analysis_method
+                FROM sentiment_twitter s
+                JOIN twitter_tweets t ON s.tweet_id = t.id
+                JOIN twitter_users u ON t.user_id = u.id
+                ORDER BY t.created_at DESC
+            """)
+            sentiment_data = db.fetchall()
+
+            if sentiment_data:
+                df = pd.DataFrame(sentiment_data)
+                csv = df.to_csv(index=False)
+
+                st.download_button(
+                    f"Download Twitter Sentiment Data ({len(sentiment_data)} analyzed tweets)",
+                    data=csv,
+                    file_name=f"twitter_sentiment_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+
+        # Reddit Sentiment
+        if stats.get('sentiment_reddit', 0) > 0:
+            st.write("**Reddit Sentiment**")
+
+            db.execute("""
+                SELECT
+                    rs.subreddit_name,
+                    rp.title,
+                    rp.author,
+                    rp.created_utc,
+                    rp.score,
+                    s.sentiment,
+                    s.polarity,
+                    s.subjectivity,
+                    s.analysis_method
+                FROM sentiment_reddit s
+                JOIN reddit_posts rp ON s.post_id = rp.id
+                JOIN reddit_subreddits rs ON rp.subreddit_id = rs.id
+                ORDER BY rp.created_utc DESC
+            """)
+            sentiment_data = db.fetchall()
+
+            if sentiment_data:
+                df = pd.DataFrame(sentiment_data)
+                csv = df.to_csv(index=False)
+
+                st.download_button(
+                    f"Download Reddit Sentiment Data ({len(sentiment_data)} analyzed posts)",
+                    data=csv,
+                    file_name=f"reddit_sentiment_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv"
                 )
 
