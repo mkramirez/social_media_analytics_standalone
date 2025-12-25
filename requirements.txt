@@ -1,0 +1,35 @@
+# Standalone Social Media Analytics - Streamlit Only Version
+# Updated for Python 3.14 compatibility
+
+# Streamlit
+streamlit
+
+# Data Processing
+pandas
+numpy
+
+# Visualization
+plotly
+matplotlib
+seaborn
+
+# Platform APIs
+tweepy              # Twitter API
+google-api-python-client  # YouTube API
+praw                # Reddit API
+requests            # For Twitch API
+
+# Analytics & NLP
+textblob           # Sentiment analysis (lightweight alternative to transformers)
+wordcloud          # Word cloud generation
+
+# Utilities
+python-dotenv      # Optional: for loading .env in development
+pytz               # Timezone handling
+
+# Export
+openpyxl           # Excel export
+reportlab          # PDF generation
+
+# Progress bars for data collection
+tqdm
