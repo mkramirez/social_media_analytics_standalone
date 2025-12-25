@@ -17,7 +17,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database.session_db import get_session_db
 
 
-st.set_page_config(page_title="Analytics", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Data Analytics", page_icon="📊", layout="wide")
 
 
 def analyze_sentiment(text: str) -> dict:

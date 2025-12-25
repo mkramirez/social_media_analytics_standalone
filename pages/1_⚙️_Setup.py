@@ -15,7 +15,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.credential_manager import CredentialManager
 
 
-st.set_page_config(page_title="Setup", page_icon="⚙️", layout="wide")
+st.set_page_config(page_title="API Setup", page_icon="⚙️", layout="wide")
 
 
 def show_twitch_setup():

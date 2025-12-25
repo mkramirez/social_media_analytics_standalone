@@ -19,7 +19,7 @@ from utils.job_manager import JobManager
 from src.platforms.twitter_integration import TwitterDatabase, collect_twitter_data
 
 
-st.set_page_config(page_title="Twitter", page_icon="🐦", layout="wide")
+st.set_page_config(page_title="Twitter Monitoring", page_icon="🐦", layout="wide")
 
 
 def check_credentials():

@@ -17,7 +17,7 @@ from utils.job_manager import JobManager
 from src.platforms.reddit_integration import RedditDatabase, collect_reddit_data
 
 
-st.set_page_config(page_title="Reddit", page_icon="🔴", layout="wide")
+st.set_page_config(page_title="Reddit Monitoring", page_icon="🔴", layout="wide")
 
 
 def check_credentials():

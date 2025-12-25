@@ -24,7 +24,7 @@ from src.platforms.twitch_integration import (
 )
 
 
-st.set_page_config(page_title="Twitch", page_icon="🎮", layout="wide")
+st.set_page_config(page_title="Twitch Monitoring", page_icon="🎮", layout="wide")
 
 
 def check_credentials():

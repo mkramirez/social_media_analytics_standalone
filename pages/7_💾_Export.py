@@ -16,7 +16,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database.session_db import get_session_db
 
 
-st.set_page_config(page_title="Export", page_icon="💾", layout="wide")
+st.set_page_config(page_title="Data Export", page_icon="💾", layout="wide")
 
 
 def main():

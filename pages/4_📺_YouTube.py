@@ -17,7 +17,7 @@ from utils.job_manager import JobManager
 from src.platforms.youtube_integration import YouTubeDatabase, collect_youtube_data
 
 
-st.set_page_config(page_title="YouTube", page_icon="📺", layout="wide")
+st.set_page_config(page_title="YouTube Monitoring", page_icon="📺", layout="wide")
 
 
 def check_credentials():
