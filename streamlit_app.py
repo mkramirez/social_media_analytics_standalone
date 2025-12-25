@@ -84,44 +84,14 @@ def show_sidebar():
 
         st.divider()
 
-        # Global Monitoring Control
-        st.subheader("Global Monitoring Control")
-
-        # Monitoring interval input (in seconds)
-        if 'monitoring_interval' not in st.session_state:
-            st.session_state.monitoring_interval = 60  # Default 60 seconds
-
-        interval = st.number_input(
-            "Collection Interval (seconds)",
-            min_value=5,
-            max_value=86400,  # Max 24 hours
-            value=st.session_state.monitoring_interval,
-            step=5,
-            help="How often to collect data for all monitored entities"
-        )
-        st.session_state.monitoring_interval = interval
-
-        # Start/Stop All button
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Start All Monitoring", use_container_width=True):
-                JobManager.start_all_jobs(interval_seconds=interval)
-                st.session_state.monitoring_active = True
-                st.success("Monitoring started!")
-                st.rerun()
-
-        with col2:
-            if st.button("Stop All Monitoring", use_container_width=True):
-                JobManager.stop_all_jobs()
-                st.session_state.monitoring_active = False
-                st.warning("Monitoring stopped")
-                st.rerun()
-
-        # Show status
+        # Monitoring status indicator (compact)
         if st.session_state.get('monitoring_active', False):
-            st.success(f"✓ Monitoring active (every {interval}s)")
+            interval = st.session_state.get('monitoring_interval', 60)
+            st.success(f"✓ Monitoring Active ({interval}s)")
         else:
-            st.info("Monitoring inactive")
+            st.info("Monitoring Inactive")
+
+        st.caption("Configure monitoring in Settings page")
 
         st.divider()
 
